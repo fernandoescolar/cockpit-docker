@@ -7,7 +7,7 @@ import { Split, SplitItem } from "@patternfly/react-core/dist/esm/layouts/Split"
 import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput";
 import { Toolbar, ToolbarContent, ToolbarItem } from "@patternfly/react-core/dist/esm/components/Toolbar";
 import cockpit from 'cockpit';
-import MonacoScriptEditor from './MonacoScriptEditor.jsx';
+import ScriptEditor from './ScriptEditor.jsx';
 
 const _ = cockpit.gettext;
 
@@ -49,12 +49,12 @@ const ComposeEditorTab = ({
             </FormGroup>
 
             <FormGroup fieldId="compose-file-editor" label={cockpit.format(_("Editing: $0"), selectedComposeFile)}>
-                <MonacoScriptEditor value={editorContent}
-                                    onChange={onEditorContentChange}
-                                    language="yaml"
-                                    height="45vh"
-                                    rows={24}
-                                    isDisabled={loadingEditor} />
+                <ScriptEditor value={editorContent}
+                              onChange={onEditorContentChange}
+                              language="yaml"
+                              height="45vh"
+                              rows={24}
+                              isDisabled={loadingEditor} />
             </FormGroup>
             <Toolbar>
                 <ToolbarContent>
@@ -68,11 +68,11 @@ const ComposeEditorTab = ({
                                onToggle={(_event, expanded) => setIsEnvExpanded(expanded)}>
                 <FormGroup fieldId="compose-env-editor"
                            helperText={_("Variables and templates per stack can be managed here")}>
-                    <MonacoScriptEditor value={envContent}
-                                        onChange={onEnvContentChange}
-                                        language="shell"
-                                        height="20vh"
-                                        rows={10} />
+                    <ScriptEditor value={envContent}
+                                  onChange={onEnvContentChange}
+                                  language="shell"
+                                  height="20vh"
+                                  rows={10} />
                     <Button variant="secondary" isDisabled={isSavingEnv} onClick={onSaveEnv}>{isSavingEnv ? _("Saving") : _("Save .env")}</Button>
                 </FormGroup>
             </ExpandableSection>
