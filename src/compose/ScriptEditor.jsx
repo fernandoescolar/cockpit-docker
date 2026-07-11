@@ -9,27 +9,41 @@ function escapeHtml(value) {
 }
 
 function highlightYaml(input) {
-    let text = escapeHtml(input || "");
+    return (input || "")
+            .split("\n")
+            .map(line => {
+                let text = escapeHtml(line);
 
-    text = text.replace(/(^|\n)(\s*#.*$)/gm, "$1<span class=\"ct-editor-token-comment\">$2</span>");
-    text = text.replace(/(^|\n)(\s*)([A-Za-z0-9_.-]+)(\s*:)/gm, "$1$2<span class=\"ct-editor-token-key\">$3</span>$4");
-    text = text.replace(/(["'])(.*?)(\1)/g, "<span class=\"ct-editor-token-string\">$1$2$3</span>");
-    text = text.replace(/\b(true|false|yes|no|null)\b/gi, "<span class=\"ct-editor-token-bool\">$1</span>");
-    text = text.replace(/\b(-?\d+(?:\.\d+)?)\b/g, "<span class=\"ct-editor-token-number\">$1</span>");
-    text = text.replace(/(^|\n)(\s*-\s)/g, "$1$2<span class=\"ct-editor-token-list\">- </span>");
+                if (/^\s*#/.test(line))
+                    return `<span class="ct-editor-token-comment">${text}</span>`;
 
-    return text;
+                text = text.replace(/(["'])(.*?)(\1)/g, "<span class=\"ct-editor-token-string\">$1$2$3</span>");
+                text = text.replace(/^(\s*)([A-Za-z0-9_.-]+)(\s*:)/, "$1<span class=\"ct-editor-token-key\">$2</span>$3");
+                text = text.replace(/^(\s*-\s)/, "<span class=\"ct-editor-token-list\">$1</span>");
+                text = text.replace(/\b(true|false|yes|no|null)\b/gi, "<span class=\"ct-editor-token-bool\">$1</span>");
+                text = text.replace(/\b(-?\d+(?:\.\d+)?)\b/g, "<span class=\"ct-editor-token-number\">$1</span>");
+
+                return text;
+            })
+            .join("\n");
 }
 
 function highlightShell(input) {
-    let text = escapeHtml(input || "");
+    return (input || "")
+            .split("\n")
+            .map(line => {
+                let text = escapeHtml(line);
 
-    text = text.replace(/(^|\n)(\s*#.*$)/gm, "$1<span class=\"ct-editor-token-comment\">$2</span>");
-    text = text.replace(/\$(\{?[A-Za-z_][A-Za-z0-9_]*\}?)/g, "<span class=\"ct-editor-token-var\">$$$1</span>");
-    text = text.replace(/\b(export|if|then|else|fi|for|in|do|done|while|case|esac|function)\b/g, "<span class=\"ct-editor-token-keyword\">$1</span>");
-    text = text.replace(/(["'])(.*?)(\1)/g, "<span class=\"ct-editor-token-string\">$1$2$3</span>");
+                if (/^\s*#/.test(line))
+                    return `<span class="ct-editor-token-comment">${text}</span>`;
 
-    return text;
+                text = text.replace(/(["'])(.*?)(\1)/g, "<span class=\"ct-editor-token-string\">$1$2$3</span>");
+                text = text.replace(/\$(\{?[A-Za-z_][A-Za-z0-9_]*\}?)/g, "<span class=\"ct-editor-token-var\">$$$1</span>");
+                text = text.replace(/\b(export|if|then|else|fi|for|in|do|done|while|case|esac|function)\b/g, "<span class=\"ct-editor-token-keyword\">$1</span>");
+
+                return text;
+            })
+            .join("\n");
 }
 
 function highlightContent(input, language) {
