@@ -7,7 +7,40 @@ containers](https://docker.io/).
 
  - cockpit-docker communicates to docker through its [REST API](https://docs.docker.com/engine/api/v1.43/).
 
+ - Compose management is implemented through the local CLI (`docker compose` with fallback to `podman compose`) for stack lifecycle operations and file workflows.
+
  - This project is based on [cockpit-podman](https://github.com/cockpit-project/cockpit-podman), I ported as much as I could to the docker API, but not everything maps (e.g. pods) and not everything is ported yet.
+
+## Compose management (MVP)
+
+cockpit-docker now includes a Compose tab in the main page, so you can switch between:
+
+ - Containers view (existing Images + Containers cards)
+ - Compose view (stack list + editor + controls)
+
+Current Compose features:
+
+ - Discover compose stacks under a configurable root path (default: `/etc/docker/compose`)
+ - Show stack status (`running`, `degraded`, `stopped`, `unknown`) and running service counters
+ - Advanced stack operations: create, delete, duplicate, rename, import (file/content), deploy from Git
+ - Multiple compose file support per stack (including override-style workflows)
+ - Read and edit compose files directly from the UI
+ - Monaco-powered YAML editor for compose files
+ - `.env` editor per stack for variable management
+ - Built-in stack templates for quick bootstrap
+ - Secrets as `KEY=VALUE` entries injected into compose command environments
+ - Diff preview before applying compose changes
+ - Local history snapshots with restore for compose file versioning
+ - Save compose files
+ - Run lifecycle actions: `Up`, `Stop`, `Down`, `Restart`, `Pull`, `Update` (`pull` + `up -d`), `Recreate`
+ - Service-level operations: restart and scale
+ - Service observability: status list, health/error details, logs (auto-refresh), and inspect view
+
+Operational notes:
+
+ - Compose operations require elevated privileges in Cockpit.
+ - Stack actions and file editing use a Monaco-based editor in the UI.
+ - The selected top-level view is reflected in URL options through `view=compose`.
 
 # Development dependencies
 

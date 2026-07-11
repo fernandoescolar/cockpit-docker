@@ -110,6 +110,10 @@
    color: var(--pf-v5-global--Color--200);
 }
 
+.containers-compose .pf-v5-c-code-editor {
+    min-height: 22rem;
+}
+
 .content-action {
     text-align: end;
     white-space: nowrap !important;

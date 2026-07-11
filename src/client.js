@@ -56,11 +56,19 @@ export const getContainers = () => dockerJson("/containers/json", "GET", { all: 
 
 export const streamContainerStats = (id, callback) => dockerMonitor("/containers/" + id + "/stats", "GET", { stream: true }, callback);
 
+function normalizeContainerName(container) {
+    if (container?.Name)
+        container.Name = container.Name.replace(/^\//, "");
+
+    return container;
+}
+
 export function inspectContainer(id) {
     const options = {
         size: false // set true to display filesystem usage
     };
-    return dockerJson("/containers/" + id + "/json", "GET", options);
+    return dockerJson("/containers/" + id + "/json", "GET", options)
+            .then(normalizeContainerName);
 }
 
 export const delContainer = (id, force) => dockerCall("/containers/" + id, "DELETE", { force });

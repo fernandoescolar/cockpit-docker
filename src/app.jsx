@@ -24,6 +24,7 @@ import { Button } from "@patternfly/react-core/dist/esm/components/Button";
 import { Checkbox } from "@patternfly/react-core/dist/esm/components/Checkbox";
 import { EmptyState, EmptyStateHeader, EmptyStateFooter, EmptyStateIcon, EmptyStateActions, EmptyStateVariant } from "@patternfly/react-core/dist/esm/components/EmptyState";
 import { Stack } from "@patternfly/react-core/dist/esm/layouts/Stack";
+import { Tab, Tabs, TabTitleText } from "@patternfly/react-core/dist/esm/components/Tabs";
 import { ExclamationCircleIcon } from '@patternfly/react-icons';
 import { Spinner } from "@patternfly/react-core/dist/esm/components/Spinner";
 import { WithDialogs } from "dialogs.jsx";
@@ -33,6 +34,7 @@ import { superuser } from "superuser";
 import ContainerHeader from './ContainerHeader.jsx';
 import Containers from './Containers.jsx';
 import Images from './Images.jsx';
+import ComposeManager from './ComposeManager.jsx';
 import * as client from './client.js';
 import { WithDockerInfo } from './util.js';
 
@@ -56,6 +58,7 @@ class Application extends React.Component {
             notifications: [],
             showStartService: true,
             version: '1.3.0',
+            activeView: 'containers',
             selinuxAvailable: false,
             dockerRestartAvailable: false,
             currentUser: _("User"),
@@ -71,6 +74,7 @@ class Application extends React.Component {
         this.startService = this.startService.bind(this);
         this.goToServicePage = this.goToServicePage.bind(this);
         this.onNavigate = this.onNavigate.bind(this);
+        this.onViewChanged = this.onViewChanged.bind(this);
 
         this.pendingUpdateContainer = {}; // id → promise
     }
@@ -125,6 +129,18 @@ class Application extends React.Component {
             this.updateUrl(Object.assign(options));
         } else {
             this.updateUrl(Object.assign(options, { container: value }));
+        }
+    }
+
+    onViewChanged(value) {
+        this.setState({ activeView: value });
+
+        const options = this.state.location;
+        if (value === "containers") {
+            delete options.view;
+            this.updateUrl(Object.assign(options));
+        } else {
+            this.updateUrl(Object.assign(options, { view: value }));
         }
     }
 
@@ -401,6 +417,9 @@ class Application extends React.Component {
         this.setState({ location: options }, () => {
             // only use the root path
             if (path.length === 0) {
+                if (options.view) {
+                    this.setState({ activeView: options.view });
+                }
                 if (options.name) {
                     this.onFilterChanged(options.name);
                 }
@@ -565,6 +584,13 @@ class Application extends React.Component {
             />
         );
 
+        const composeView = (
+            <ComposeManager
+                key="composeView"
+                onAddNotification={this.onAddNotification}
+            />
+        );
+
         const notificationList = (
             <AlertGroup isToast>
                 {this.state.notifications.map((notification, index) => {
@@ -603,8 +629,18 @@ class Application extends React.Component {
                         <PageSection className='ct-pagesection-mobile'>
                             <Stack hasGutter>
                                 { this.state.showStartService ? startService : null }
-                                {imageList}
-                                {containerList}
+                                <Tabs activeKey={this.state.activeView}
+                                      onSelect={(_event, key) => this.onViewChanged(key)}>
+                                    <Tab eventKey="containers" title={<TabTitleText>{_("Containers")}</TabTitleText>}>
+                                        <Stack hasGutter>
+                                            {imageList}
+                                            {containerList}
+                                        </Stack>
+                                    </Tab>
+                                    <Tab eventKey="compose" title={<TabTitleText>{_("Compose")}</TabTitleText>}>
+                                        {composeView}
+                                    </Tab>
+                                </Tabs>
                             </Stack>
                         </PageSection>
                     </Page>
