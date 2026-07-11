@@ -2,17 +2,34 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Spinner } from "@patternfly/react-core/dist/esm/components/Spinner";
 import { TextArea } from "@patternfly/react-core/dist/esm/components/TextArea";
 
-const MONACO_BASE_URL = "https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min";
+const MONACO_CDN_BASE_URL = "https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min";
+const LANGUAGE_CONTRIBUTIONS = {
+    yaml: "vs/basic-languages/yaml/yaml.contribution",
+    shell: "vs/basic-languages/shell/shell.contribution",
+    sh: "vs/basic-languages/shell/shell.contribution",
+};
 
 let monacoLoadPromise;
+let monacoBaseUrl;
 
-function ensureMonacoStyles() {
+function getMonacoBaseCandidates() {
+    const currentDir = new URL(".", window.location.href).href.replace(/\/$/, "");
+    const configured = window.__ctMonacoBaseUrl;
+
+    return [
+        configured,
+        `${currentDir}/monaco/min`,
+        MONACO_CDN_BASE_URL,
+    ].filter(Boolean);
+}
+
+function ensureMonacoStyles(baseUrl) {
     if (document.querySelector("link[data-monaco-editor-css='1']"))
         return;
 
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = `${MONACO_BASE_URL}/vs/editor/editor.main.css`;
+    link.href = `${baseUrl}/vs/editor/editor.main.css`;
     link.setAttribute("data-monaco-editor-css", "1");
     document.head.appendChild(link);
 }
@@ -23,6 +40,11 @@ function loadScript(src) {
         if (existing) {
             if (existing.getAttribute("data-loaded") === "1") {
                 resolve();
+                return;
+            }
+
+            if (existing.getAttribute("data-failed") === "1") {
+                reject(new Error(`Failed to load ${src}`));
                 return;
             }
 
@@ -38,9 +60,49 @@ function loadScript(src) {
             script.setAttribute("data-loaded", "1");
             resolve();
         }, { once: true });
-        script.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), { once: true });
+        script.addEventListener("error", () => {
+            script.setAttribute("data-failed", "1");
+            reject(new Error(`Failed to load ${src}`));
+        }, { once: true });
         document.head.appendChild(script);
     });
+}
+
+function requireModules(modules) {
+    return new Promise((resolve, reject) => {
+        window.require(modules, resolve, reject);
+    });
+}
+
+async function loadLanguageContribution(language) {
+    const contribution = LANGUAGE_CONTRIBUTIONS[language];
+    if (!contribution || !window.require)
+        return;
+
+    try {
+        await requireModules([contribution]);
+    } catch {
+        // Keep the editor usable even when a language contribution fails.
+    }
+}
+
+async function tryLoadMonaco(baseUrl) {
+    await loadScript(`${baseUrl}/vs/loader.js`);
+    ensureMonacoStyles(baseUrl);
+
+    if (!window.require)
+        throw new Error("Monaco loader unavailable");
+
+    window.require.config({
+        paths: {
+            vs: `${baseUrl}/vs`,
+        },
+    });
+
+    await requireModules(["vs/editor/editor.main"]);
+    monacoBaseUrl = baseUrl;
+
+    return window.monaco;
 }
 
 function ensureMonaco() {
@@ -48,24 +110,19 @@ function ensureMonaco() {
         return Promise.resolve(window.monaco);
 
     if (!monacoLoadPromise) {
-        monacoLoadPromise = loadScript(`${MONACO_BASE_URL}/vs/loader.js`).then(() => {
-            ensureMonacoStyles();
+        monacoLoadPromise = (async () => {
+            const candidates = getMonacoBaseCandidates();
 
-            return new Promise((resolve, reject) => {
-                if (!window.require) {
-                    reject(new Error("Monaco loader unavailable"));
-                    return;
+            for (const candidate of candidates) {
+                try {
+                    return await tryLoadMonaco(candidate);
+                } catch {
+                    // Try next candidate origin.
                 }
+            }
 
-                window.require.config({
-                    paths: {
-                        vs: `${MONACO_BASE_URL}/vs`,
-                    },
-                });
-
-                window.require(["vs/editor/editor.main"], () => resolve(window.monaco), reject);
-            });
-        });
+            throw new Error("Unable to load Monaco from configured sources");
+        })();
     }
 
     return monacoLoadPromise;
@@ -90,7 +147,11 @@ const MonacoScriptEditor = ({
         let cancelled = false;
 
         ensureMonaco()
-                .then(monaco => {
+                .then(async monaco => {
+                    if (cancelled || !containerRef.current)
+                        return;
+
+                    await loadLanguageContribution(language || "plaintext");
                     if (cancelled || !containerRef.current)
                         return;
 
@@ -139,9 +200,19 @@ const MonacoScriptEditor = ({
         if (!editorRef.current || !monacoRef.current)
             return;
 
-        const model = editorRef.current.getModel();
-        if (model)
-            monacoRef.current.editor.setModelLanguage(model, language || "plaintext");
+        let alive = true;
+        loadLanguageContribution(language || "plaintext").then(() => {
+            if (!alive || !editorRef.current || !monacoRef.current)
+                return;
+
+            const model = editorRef.current.getModel();
+            if (model)
+                monacoRef.current.editor.setModelLanguage(model, language || "plaintext");
+        });
+
+        return () => {
+            alive = false;
+        };
     }, [language]);
 
     useEffect(() => {
@@ -162,7 +233,7 @@ const MonacoScriptEditor = ({
     }
 
     return (
-        <div className="ct-monaco-editor-wrap" style={{ height: height || "40vh" }}>
+        <div className="ct-monaco-editor-wrap" style={{ height: height || "40vh" }} data-monaco-base-url={monacoBaseUrl || ""}>
             {!ready && <div className="ct-monaco-editor-loading"><Spinner size="md" /></div>}
             <div className="ct-monaco-editor" ref={containerRef} />
         </div>
