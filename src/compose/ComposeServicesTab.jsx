@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from "@patternfly/react-core/dist/esm/components/Button";
+import { ExpandableSection } from "@patternfly/react-core/dist/esm/components/ExpandableSection";
 import { FormGroup } from "@patternfly/react-core/dist/esm/components/Form";
 import { FormSelect, FormSelectOption } from "@patternfly/react-core/dist/esm/components/FormSelect";
 import { List, ListItem } from "@patternfly/react-core/dist/esm/components/List";
@@ -23,6 +24,13 @@ const ComposeServicesTab = ({
     serviceLogs,
     serviceInspect,
 }) => {
+    const [isLogsExpanded, setIsLogsExpanded] = React.useState(true);
+    const [isInspectExpanded, setIsInspectExpanded] = React.useState(false);
+
+    if (services.length === 0) {
+        return <small className="ct-grey-text">{_("No services found for this stack yet.")}</small>;
+    }
+
     return (
         <Split hasGutter>
             <SplitItem isFilled>
@@ -60,18 +68,27 @@ const ComposeServicesTab = ({
             </SplitItem>
 
             <SplitItem isFilled>
-                <FormGroup fieldId="compose-service-logs" label={_("Logs (auto-refresh)")}>
-                    <TextArea value={serviceLogs}
-                              rows={10}
-                              resizeOrientation="vertical"
-                              readOnly />
-                </FormGroup>
-                <FormGroup fieldId="compose-service-inspect" label={_("Inspect")}>
-                    <TextArea value={serviceInspect}
-                              rows={10}
-                              resizeOrientation="vertical"
-                              readOnly />
-                </FormGroup>
+                <ExpandableSection toggleText={_("Logs (auto-refresh)")}
+                                   isExpanded={isLogsExpanded}
+                                   onToggle={(_event, expanded) => setIsLogsExpanded(expanded)}>
+                    <FormGroup fieldId="compose-service-logs">
+                        <TextArea value={serviceLogs}
+                                  rows={10}
+                                  resizeOrientation="vertical"
+                                  readOnly />
+                    </FormGroup>
+                </ExpandableSection>
+
+                <ExpandableSection toggleText={_("Inspect")}
+                                   isExpanded={isInspectExpanded}
+                                   onToggle={(_event, expanded) => setIsInspectExpanded(expanded)}>
+                    <FormGroup fieldId="compose-service-inspect">
+                        <TextArea value={serviceInspect}
+                                  rows={10}
+                                  resizeOrientation="vertical"
+                                  readOnly />
+                    </FormGroup>
+                </ExpandableSection>
             </SplitItem>
         </Split>
     );

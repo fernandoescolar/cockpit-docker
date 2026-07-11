@@ -131,6 +131,50 @@
     z-index: 1;
 }
 
+.ct-compose-root-toolbar {
+    margin-block-end: var(--pf-v5-global--spacer--md);
+}
+
+.ct-compose-main-grid {
+    align-items: start;
+}
+
+.ct-compose-project-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pf-v5-global--spacer--sm);
+}
+
+.ct-compose-project-item {
+    padding: var(--pf-v5-global--spacer--sm);
+    border: 1px solid var(--pf-v5-global--BorderColor--100);
+    border-radius: var(--pf-v5-global--BorderRadius--sm);
+}
+
+.ct-compose-project-item.pf-m-selected {
+    border-color: var(--pf-v5-global--active-color--100);
+    background: var(--pf-v5-global--palette--blue-50);
+}
+
+.ct-compose-project-meta {
+    margin-block-start: var(--pf-v5-global--spacer--xs);
+    display: flex;
+    gap: var(--pf-v5-global--spacer--sm);
+    align-items: center;
+}
+
+.ct-compose-selected-summary {
+    margin-block-end: var(--pf-v5-global--spacer--md);
+}
+
+.ct-compose-expandable {
+    margin-block-end: var(--pf-v5-global--spacer--md);
+}
+
+.ct-compose-tabs {
+    margin-block-start: var(--pf-v5-global--spacer--md);
+}
+
 .content-action {
     text-align: end;
     white-space: nowrap !important;

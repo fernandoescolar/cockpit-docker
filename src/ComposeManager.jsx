@@ -3,6 +3,7 @@ import { Button } from "@patternfly/react-core/dist/esm/components/Button";
 import { Card, CardBody, CardHeader, CardTitle } from "@patternfly/react-core/dist/esm/components/Card";
 import { CodeBlock, CodeBlockCode } from "@patternfly/react-core/dist/esm/components/CodeBlock";
 import { EmptyState, EmptyStateFooter, EmptyStateHeader, EmptyStateVariant } from "@patternfly/react-core/dist/esm/components/EmptyState";
+import { ExpandableSection } from "@patternfly/react-core/dist/esm/components/ExpandableSection";
 import { Grid, GridItem } from "@patternfly/react-core/dist/esm/layouts/Grid";
 import { Tab, TabTitleText, Tabs } from "@patternfly/react-core/dist/esm/components/Tabs";
 import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput";
@@ -20,6 +21,10 @@ import { useComposeManager } from './compose/useComposeManager.js';
 const _ = cockpit.gettext;
 
 const ComposeManager = ({ onAddNotification }) => {
+    const [isActionPanelExpanded, setIsActionPanelExpanded] = React.useState(true);
+    const [isSecretsPanelExpanded, setIsSecretsPanelExpanded] = React.useState(false);
+    const [isAdminPanelExpanded, setIsAdminPanelExpanded] = React.useState(false);
+
     const {
         activeTab,
         setActiveTab,
@@ -110,32 +115,30 @@ const ComposeManager = ({ onAddNotification }) => {
 
     return (
         <Card id="containers-compose" className="containers-compose">
-            <CardHeader actions={{
-                actions: (
-                    <Toolbar>
-                        <ToolbarContent>
-                            <ToolbarItem>
-                                <TextInput id="compose-root-path" value={rootPath} onChange={(_, value) => setRootPath(value)} aria-label={_("Compose root path")} />
-                            </ToolbarItem>
-                            <ToolbarItem>
-                                <Button variant="secondary" onClick={() => loadProjects(false)}>{_("Reload")}</Button>
-                            </ToolbarItem>
-                        </ToolbarContent>
-                    </Toolbar>
-                )
-            }}>
+            <CardHeader>
                 <CardTitle>{_("Compose stacks")}</CardTitle>
             </CardHeader>
             <CardBody>
-                <Grid hasGutter>
-                    <GridItem span={4}>
+                <Toolbar className="ct-compose-root-toolbar">
+                    <ToolbarContent>
+                        <ToolbarItem>
+                            <TextInput id="compose-root-path" value={rootPath} onChange={(_, value) => setRootPath(value)} aria-label={_("Compose root path")} />
+                        </ToolbarItem>
+                        <ToolbarItem>
+                            <Button variant="secondary" onClick={() => loadProjects(false)}>{_("Reload")}</Button>
+                        </ToolbarItem>
+                    </ToolbarContent>
+                </Toolbar>
+
+                <Grid hasGutter className="ct-compose-main-grid">
+                    <GridItem md={4} lg={3}>
                         <ComposeProjectList
                             projects={projects}
                             selectedProject={selectedProject}
                             onSelectProject={setSelectedProjectId}
                         />
                     </GridItem>
-                    <GridItem span={8}>
+                    <GridItem md={8} lg={9}>
                         {!selectedProject && (
                             <EmptyState variant={EmptyStateVariant.sm}>
                                 <EmptyStateHeader titleText={_("Select a compose stack")} headingLevel="h3" />
@@ -144,62 +147,86 @@ const ComposeManager = ({ onAddNotification }) => {
 
                         {selectedProject && (
                             <>
-                                <Toolbar>
-                                    <ToolbarContent>
-                                        <ToolbarItem><Button isDisabled={isRunningAction} onClick={() => runAction(_("up"), composeUp, composeFiles)}>{_("Up")}</Button></ToolbarItem>
-                                        <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("stop"), composeStop, composeFiles)}>{_("Stop")}</Button></ToolbarItem>
-                                        <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("down"), composeDown, composeFiles)}>{_("Down")}</Button></ToolbarItem>
-                                        <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("restart"), composeRestart, composeFiles)}>{_("Restart")}</Button></ToolbarItem>
-                                        <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("pull"), composePull, composeFiles)}>{_("Pull")}</Button></ToolbarItem>
-                                        <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("update"), composePullAndUp, composeFiles)}>{_("Update")}</Button></ToolbarItem>
-                                        <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("recreate"), composeRecreate, composeFiles)}>{_("Recreate")}</Button></ToolbarItem>
-                                        <ToolbarItem><Button isDisabled={isDeleting} variant="danger" onClick={removeProject}>{isDeleting ? _("Deleting") : _("Delete stack")}</Button></ToolbarItem>
-                                    </ToolbarContent>
-                                </Toolbar>
+                                <Card isFlat className="ct-compose-selected-summary">
+                                    <CardBody>
+                                        <strong>{selectedProject.name}</strong>
+                                        <div className="ct-grey-text">
+                                            {cockpit.format(_("$0/$1 services running"), selectedProject.running || 0, selectedProject.total || 0)}
+                                        </div>
+                                    </CardBody>
+                                </Card>
 
-                                <ComposeSecretsPanel
-                                    actionSecretsText={actionSecretsText}
-                                    onActionSecretsTextChange={setActionSecretsText}
-                                    secretPassphrase={secretPassphrase}
-                                    onSecretPassphraseChange={setSecretPassphrase}
-                                    secretStorageBusy={secretStorageBusy}
-                                    hasSecretsOnDisk={hasSecretsOnDisk}
-                                    onSaveSecrets={saveSecretsToDisk}
-                                    onUnlockSecrets={loadSecretsFromDisk}
-                                    onDeleteSecrets={removeSecretsFromDisk}
-                                />
+                                <ExpandableSection toggleText={_("Quick actions")}
+                                                   isExpanded={isActionPanelExpanded}
+                                                   onToggle={(_event, expanded) => setIsActionPanelExpanded(expanded)}
+                                                   className="ct-compose-expandable">
+                                    <Toolbar>
+                                        <ToolbarContent>
+                                            <ToolbarItem><Button isDisabled={isRunningAction} onClick={() => runAction(_("up"), composeUp, composeFiles)}>{_("Up")}</Button></ToolbarItem>
+                                            <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("stop"), composeStop, composeFiles)}>{_("Stop")}</Button></ToolbarItem>
+                                            <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("down"), composeDown, composeFiles)}>{_("Down")}</Button></ToolbarItem>
+                                            <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("restart"), composeRestart, composeFiles)}>{_("Restart")}</Button></ToolbarItem>
+                                            <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("pull"), composePull, composeFiles)}>{_("Pull")}</Button></ToolbarItem>
+                                            <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("update"), composePullAndUp, composeFiles)}>{_("Update")}</Button></ToolbarItem>
+                                            <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("recreate"), composeRecreate, composeFiles)}>{_("Recreate")}</Button></ToolbarItem>
+                                            <ToolbarItem><Button isDisabled={isDeleting} variant="danger" onClick={removeProject}>{isDeleting ? _("Deleting") : _("Delete stack")}</Button></ToolbarItem>
+                                        </ToolbarContent>
+                                    </Toolbar>
+                                </ExpandableSection>
 
-                                <ComposeStackAdminPanel
-                                    newProjectName={newProjectName}
-                                    onNewProjectNameChange={setNewProjectName}
-                                    templateName={templateName}
-                                    onTemplateNameChange={setTemplateName}
-                                    isCreating={isCreating}
-                                    onCreateProject={createProject}
-                                    duplicateName={duplicateName}
-                                    onDuplicateNameChange={setDuplicateName}
-                                    onDuplicateProject={duplicateProject}
-                                    renameName={renameName}
-                                    onRenameNameChange={setRenameName}
-                                    onRenameProject={renameProject}
-                                    importProjectName={importProjectName}
-                                    onImportProjectNameChange={setImportProjectName}
-                                    importFilePath={importFilePath}
-                                    onImportFilePathChange={setImportFilePath}
-                                    onImportFromFile={importFromFile}
-                                    importContent={importContent}
-                                    onImportContentChange={setImportContent}
-                                    onImportFromContent={importFromContent}
-                                    gitRepo={gitRepo}
-                                    onGitRepoChange={setGitRepo}
-                                    gitBranch={gitBranch}
-                                    onGitBranchChange={setGitBranch}
-                                    gitComposePath={gitComposePath}
-                                    onGitComposePathChange={setGitComposePath}
-                                    onImportFromGit={importFromGit}
-                                />
+                                <ExpandableSection toggleText={_("Secrets")}
+                                                   isExpanded={isSecretsPanelExpanded}
+                                                   onToggle={(_event, expanded) => setIsSecretsPanelExpanded(expanded)}
+                                                   className="ct-compose-expandable">
+                                    <ComposeSecretsPanel
+                                        actionSecretsText={actionSecretsText}
+                                        onActionSecretsTextChange={setActionSecretsText}
+                                        secretPassphrase={secretPassphrase}
+                                        onSecretPassphraseChange={setSecretPassphrase}
+                                        secretStorageBusy={secretStorageBusy}
+                                        hasSecretsOnDisk={hasSecretsOnDisk}
+                                        onSaveSecrets={saveSecretsToDisk}
+                                        onUnlockSecrets={loadSecretsFromDisk}
+                                        onDeleteSecrets={removeSecretsFromDisk}
+                                    />
+                                </ExpandableSection>
 
-                                <Tabs activeKey={activeTab} onSelect={(_event, key) => setActiveTab(key)}>
+                                <ExpandableSection toggleText={_("Stack setup and import")}
+                                                   isExpanded={isAdminPanelExpanded}
+                                                   onToggle={(_event, expanded) => setIsAdminPanelExpanded(expanded)}
+                                                   className="ct-compose-expandable">
+                                    <ComposeStackAdminPanel
+                                        newProjectName={newProjectName}
+                                        onNewProjectNameChange={setNewProjectName}
+                                        templateName={templateName}
+                                        onTemplateNameChange={setTemplateName}
+                                        isCreating={isCreating}
+                                        onCreateProject={createProject}
+                                        duplicateName={duplicateName}
+                                        onDuplicateNameChange={setDuplicateName}
+                                        onDuplicateProject={duplicateProject}
+                                        renameName={renameName}
+                                        onRenameNameChange={setRenameName}
+                                        onRenameProject={renameProject}
+                                        importProjectName={importProjectName}
+                                        onImportProjectNameChange={setImportProjectName}
+                                        importFilePath={importFilePath}
+                                        onImportFilePathChange={setImportFilePath}
+                                        onImportFromFile={importFromFile}
+                                        importContent={importContent}
+                                        onImportContentChange={setImportContent}
+                                        onImportFromContent={importFromContent}
+                                        gitRepo={gitRepo}
+                                        onGitRepoChange={setGitRepo}
+                                        gitBranch={gitBranch}
+                                        onGitBranchChange={setGitBranch}
+                                        gitComposePath={gitComposePath}
+                                        onGitComposePathChange={setGitComposePath}
+                                        onImportFromGit={importFromGit}
+                                    />
+                                </ExpandableSection>
+
+                                <Tabs activeKey={activeTab} onSelect={(_event, key) => setActiveTab(key)} className="ct-compose-tabs">
                                     <Tab eventKey="editor" title={<TabTitleText>{_("Editor")}</TabTitleText>}>
                                         <ComposeEditorTab
                                             composeFiles={composeFiles}
@@ -256,7 +283,7 @@ const ComposeManager = ({ onAddNotification }) => {
                     </GridItem>
                 </Grid>
                 <EmptyStateFooter>
-                    <small>{_("Advanced compose management includes stack operations, multi-file workflows, service observability, diff, and version history.")}</small>
+                    <small>{_("Use the collapsible sections to work step-by-step and keep the view focused.")}</small>
                 </EmptyStateFooter>
             </CardBody>
         </Card>

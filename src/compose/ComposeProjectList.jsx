@@ -1,6 +1,7 @@
 import React from 'react';
 import { Badge } from "@patternfly/react-core/dist/esm/components/Badge";
 import { Button } from "@patternfly/react-core/dist/esm/components/Button";
+import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput";
 import { EmptyState, EmptyStateBody, EmptyStateHeader, EmptyStateVariant } from "@patternfly/react-core/dist/esm/components/EmptyState";
 import { List, ListItem } from "@patternfly/react-core/dist/esm/components/List";
 import { Spinner } from "@patternfly/react-core/dist/esm/components/Spinner";
@@ -20,6 +21,8 @@ function statusBadge(status) {
 }
 
 const ComposeProjectList = ({ projects, selectedProject, onSelectProject }) => {
+    const [filterText, setFilterText] = React.useState("");
+
     if (projects === null)
         return <Spinner size="lg" />;
 
@@ -34,21 +37,32 @@ const ComposeProjectList = ({ projects, selectedProject, onSelectProject }) => {
         );
     }
 
+    const filteredProjects = projects.filter(project => project.name.toLowerCase().includes(filterText.trim().toLowerCase()));
+
     return (
-        <List isPlain>
-            {projects.map(project => {
+        <div className="ct-compose-project-list">
+            <TextInput value={filterText}
+                       onChange={(_event, value) => setFilterText(value)}
+                       aria-label={_("Filter compose stacks")}
+                       placeholder={_("Filter stacks")} />
+            <List isPlain>
+                {filteredProjects.map(project => {
                 const isSelected = selectedProject?.id === project.id;
                 return (
-                    <ListItem key={project.id}>
-                        <Button variant={isSelected ? "secondary" : "link"} isBlock onClick={() => onSelectProject(project.id)}>
-                            {project.name}
-                        </Button>
-                        <div>{statusBadge(project.status)} <small>{cockpit.format(_("$0/$1 services running"), project.running, project.total)}</small></div>
-                        <small>{project.composeFiles?.join(", ")}</small>
-                    </ListItem>
+                        <ListItem key={project.id} className={isSelected ? "ct-compose-project-item pf-m-selected" : "ct-compose-project-item"}>
+                            <Button variant="link" isInline onClick={() => onSelectProject(project.id)}>
+                                <strong>{project.name}</strong>
+                            </Button>
+                            <div className="ct-compose-project-meta">
+                                {statusBadge(project.status)}
+                                <small>{cockpit.format(_("$0/$1 running"), project.running, project.total)}</small>
+                            </div>
+                            {isSelected && <small className="ct-grey-text">{project.composeFiles?.join(", ")}</small>}
+                        </ListItem>
                 );
-            })}
-        </List>
+                })}
+            </List>
+        </div>
     );
 };
 

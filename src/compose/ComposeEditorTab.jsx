@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from "@patternfly/react-core/dist/esm/components/Button";
+import { ExpandableSection } from "@patternfly/react-core/dist/esm/components/ExpandableSection";
 import { FormGroup } from "@patternfly/react-core/dist/esm/components/Form";
 import { FormSelect, FormSelectOption } from "@patternfly/react-core/dist/esm/components/FormSelect";
 import { Split, SplitItem } from "@patternfly/react-core/dist/esm/layouts/Split";
@@ -28,6 +29,8 @@ const ComposeEditorTab = ({
     isSavingEnv,
     onSaveEnv,
 }) => {
+    const [isEnvExpanded, setIsEnvExpanded] = React.useState(false);
+
     return (
         <>
             <FormGroup fieldId="compose-file-select" label={_("Compose files")}
@@ -60,15 +63,19 @@ const ComposeEditorTab = ({
                 </ToolbarContent>
             </Toolbar>
 
-            <FormGroup fieldId="compose-env-editor" label={_(".env editor")}
-                       helperText={_("Variables and templates per stack can be managed here")}>
-                <MonacoScriptEditor value={envContent}
-                                    onChange={onEnvContentChange}
-                                    language="shell"
-                                    height="20vh"
-                                    rows={10} />
-                <Button variant="secondary" isDisabled={isSavingEnv} onClick={onSaveEnv}>{isSavingEnv ? _("Saving") : _("Save .env")}</Button>
-            </FormGroup>
+            <ExpandableSection toggleText={_("Environment file (.env)")}
+                               isExpanded={isEnvExpanded}
+                               onToggle={(_event, expanded) => setIsEnvExpanded(expanded)}>
+                <FormGroup fieldId="compose-env-editor"
+                           helperText={_("Variables and templates per stack can be managed here")}>
+                    <MonacoScriptEditor value={envContent}
+                                        onChange={onEnvContentChange}
+                                        language="shell"
+                                        height="20vh"
+                                        rows={10} />
+                    <Button variant="secondary" isDisabled={isSavingEnv} onClick={onSaveEnv}>{isSavingEnv ? _("Saving") : _("Save .env")}</Button>
+                </FormGroup>
+            </ExpandableSection>
         </>
     );
 };
