@@ -110,8 +110,25 @@
    color: var(--pf-v5-global--Color--200);
 }
 
-.containers-compose .pf-v5-c-code-editor {
-    min-height: 22rem;
+.ct-monaco-editor-wrap {
+    position: relative;
+    min-height: 12rem;
+    border: 1px solid var(--pf-v5-global--BorderColor--100);
+}
+
+.ct-monaco-editor {
+    inline-size: 100%;
+    block-size: 100%;
+}
+
+.ct-monaco-editor-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--pf-v5-global--BackgroundColor--100) 88%, transparent);
+    z-index: 1;
 }
 
 .content-action {

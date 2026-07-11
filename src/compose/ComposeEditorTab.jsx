@@ -2,11 +2,11 @@ import React from 'react';
 import { Button } from "@patternfly/react-core/dist/esm/components/Button";
 import { FormGroup } from "@patternfly/react-core/dist/esm/components/Form";
 import { FormSelect, FormSelectOption } from "@patternfly/react-core/dist/esm/components/FormSelect";
-import { CodeEditor } from "@patternfly/react-code-editor";
 import { Split, SplitItem } from "@patternfly/react-core/dist/esm/layouts/Split";
 import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput";
 import { Toolbar, ToolbarContent, ToolbarItem } from "@patternfly/react-core/dist/esm/components/Toolbar";
 import cockpit from 'cockpit';
+import MonacoScriptEditor from './MonacoScriptEditor.jsx';
 
 const _ = cockpit.gettext;
 
@@ -46,9 +46,12 @@ const ComposeEditorTab = ({
             </FormGroup>
 
             <FormGroup fieldId="compose-file-editor" label={cockpit.format(_("Editing: $0"), selectedComposeFile)}>
-                <CodeEditor isLanguageLabelVisible isLineNumbersVisible isReadOnly={loadingEditor}
-                            language="yaml" code={editorContent} height="45vh"
-                            onChange={value => onEditorContentChange(value ?? "")} />
+                <MonacoScriptEditor value={editorContent}
+                                    onChange={onEditorContentChange}
+                                    language="yaml"
+                                    height="45vh"
+                                    rows={24}
+                                    isDisabled={loadingEditor} />
             </FormGroup>
             <Toolbar>
                 <ToolbarContent>
@@ -59,9 +62,11 @@ const ComposeEditorTab = ({
 
             <FormGroup fieldId="compose-env-editor" label={_(".env editor")}
                        helperText={_("Variables and templates per stack can be managed here")}>
-                <CodeEditor isLanguageLabelVisible isLineNumbersVisible language="shell"
-                            code={envContent} height="20vh"
-                            onChange={value => onEnvContentChange(value ?? "")} />
+                <MonacoScriptEditor value={envContent}
+                                    onChange={onEnvContentChange}
+                                    language="shell"
+                                    height="20vh"
+                                    rows={10} />
                 <Button variant="secondary" isDisabled={isSavingEnv} onClick={onSaveEnv}>{isSavingEnv ? _("Saving") : _("Save .env")}</Button>
             </FormGroup>
         </>

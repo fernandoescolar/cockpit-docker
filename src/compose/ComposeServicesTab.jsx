@@ -3,8 +3,8 @@ import { Button } from "@patternfly/react-core/dist/esm/components/Button";
 import { FormGroup } from "@patternfly/react-core/dist/esm/components/Form";
 import { FormSelect, FormSelectOption } from "@patternfly/react-core/dist/esm/components/FormSelect";
 import { List, ListItem } from "@patternfly/react-core/dist/esm/components/List";
-import { CodeEditor } from "@patternfly/react-code-editor";
 import { Split, SplitItem } from "@patternfly/react-core/dist/esm/layouts/Split";
+import { TextArea } from "@patternfly/react-core/dist/esm/components/TextArea";
 import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput";
 import cockpit from 'cockpit';
 
@@ -61,10 +61,16 @@ const ComposeServicesTab = ({
 
             <SplitItem isFilled>
                 <FormGroup fieldId="compose-service-logs" label={_("Logs (auto-refresh)")}>
-                    <CodeEditor isReadOnly language="shell" code={serviceLogs} height="22vh" />
+                    <TextArea value={serviceLogs}
+                              rows={10}
+                              resizeOrientation="vertical"
+                              readOnly />
                 </FormGroup>
                 <FormGroup fieldId="compose-service-inspect" label={_("Inspect")}>
-                    <CodeEditor isReadOnly language="json" code={serviceInspect} height="22vh" />
+                    <TextArea value={serviceInspect}
+                              rows={10}
+                              resizeOrientation="vertical"
+                              readOnly />
                 </FormGroup>
             </SplitItem>
         </Split>
