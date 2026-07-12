@@ -6,7 +6,7 @@ const _ = cockpit.gettext;
 
 const ContainerHeader = ({ textFilter, handleFilterChanged }) => {
     return (
-        <Toolbar className="pf-m-page-insets">
+        <Toolbar className="pf-m-page-insets" style={{ display: 'none' }}>
             <ToolbarContent>
                 <ToolbarItem>
                     <TextInput id="containers-filter"

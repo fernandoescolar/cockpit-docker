@@ -243,6 +243,89 @@
     margin-block-start: var(--pf-v5-global--spacer--md);
 }
 
+.ct-compose-view-tabs {
+    margin-block-start: var(--pf-v5-global--spacer--md);
+}
+
+.ct-compose-actions-toolbar {
+    margin-block-end: var(--pf-v5-global--spacer--md);
+}
+
+.ct-compose-overview-grid {
+    margin-block-end: var(--pf-v5-global--spacer--md);
+}
+
+.ct-compose-overview-card {
+    block-size: 100%;
+    border: 1px solid var(--pf-v5-global--BorderColor--100);
+}
+
+.ct-compose-overview-card.pf-m-selected {
+    border-color: var(--pf-v5-global--active-color--100);
+    background: var(--pf-v5-global--palette--blue-50);
+}
+
+.ct-compose-overview-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pf-v5-global--spacer--xs);
+}
+
+.ct-compose-overview-actions-primary,
+.ct-compose-overview-actions-secondary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--pf-v5-global--spacer--xs);
+}
+
+.ct-compose-overview-actions-primary {
+    padding-block-end: var(--pf-v5-global--spacer--xs);
+    border-block-end: 1px solid var(--pf-v5-global--BorderColor--100);
+}
+
+.ct-compose-status-line {
+    display: flex;
+    align-items: center;
+    gap: var(--pf-v5-global--spacer--xs);
+    margin-block-end: var(--pf-v5-global--spacer--sm);
+    font-size: var(--pf-v5-global--FontSize--sm);
+}
+
+.ct-compose-status-running {
+    color: var(--pf-v5-global--success-color--100);
+}
+
+.ct-compose-status-degraded {
+    color: var(--pf-v5-global--warning-color--100);
+}
+
+.ct-compose-status-stopped,
+.ct-compose-status-unknown {
+    color: var(--pf-v5-global--Color--200);
+}
+
+.ct-compose-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--pf-v5-global--spacer--sm);
+    margin-block-end: var(--pf-v5-global--spacer--sm);
+}
+
+.ct-compose-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.ct-compose-metric strong {
+    font-size: var(--pf-v5-global--FontSize--xl);
+    line-height: 1;
+}
+
+.ct-compose-metric small {
+    color: var(--pf-v5-global--Color--200);
+}
+
 .content-action {
     text-align: end;
     white-space: nowrap !important;

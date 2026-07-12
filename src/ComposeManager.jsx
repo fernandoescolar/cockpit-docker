@@ -12,6 +12,7 @@ import { Toolbar, ToolbarContent, ToolbarItem } from "@patternfly/react-core/dis
 import cockpit from 'cockpit';
 import ComposeEditorTab from './compose/ComposeEditorTab.jsx';
 import ComposeHistoryTab from './compose/ComposeHistoryTab.jsx';
+import ComposeOverviewCards from './compose/ComposeOverviewCards.jsx';
 import ComposeProjectList from './compose/ComposeProjectList.jsx';
 import ComposeSecretsPanel from './compose/ComposeSecretsPanel.jsx';
 import ComposeServicesTab from './compose/ComposeServicesTab.jsx';
@@ -21,8 +22,8 @@ import { useComposeManager } from './compose/useComposeManager.js';
 const _ = cockpit.gettext;
 
 const ComposeManager = ({ onAddNotification }) => {
-    const [isActionPanelExpanded, setIsActionPanelExpanded] = React.useState(true);
-    const [isSecretsPanelExpanded, setIsSecretsPanelExpanded] = React.useState(false);
+    const [composeView, setComposeView] = React.useState("overview");
+    const [isEditorSecretsExpanded, setIsEditorSecretsExpanded] = React.useState(false);
     const [isAdminPanelExpanded, setIsAdminPanelExpanded] = React.useState(false);
 
     const {
@@ -38,6 +39,7 @@ const ComposeManager = ({ onAddNotification }) => {
         composeFiles,
         loadProjects,
         runAction,
+        runActionForProject,
         composeUp,
         composeStop,
         composeDown,
@@ -113,6 +115,168 @@ const ComposeManager = ({ onAddNotification }) => {
         restoreHistory,
     } = useComposeManager(onAddNotification);
 
+    const onComposeViewSelect = (_event, key) => {
+        setComposeView(key);
+        if (key === "detail" && !["services", "history", "diff"].includes(activeTab))
+            setActiveTab("services");
+    };
+
+    const onShowDiffFromEditor = async () => {
+        await showDiff();
+        setComposeView("detail");
+    };
+
+    const openProjectDetail = (project) => {
+        setSelectedProjectId(project.id);
+        setActiveTab("services");
+        setComposeView("detail");
+    };
+
+    const openProjectEditor = (project) => {
+        setSelectedProjectId(project.id);
+        setComposeView("editor");
+    };
+
+    const runProjectAction = (project, actionName, fn) => {
+        setSelectedProjectId(project.id);
+        runActionForProject(project, actionName, fn);
+    };
+
+    const renderOverview = () => (
+        <>
+            <ComposeOverviewCards
+                projects={projects}
+                selectedProject={selectedProject}
+                isRunningAction={isRunningAction}
+                onSelectProject={setSelectedProjectId}
+                onStart={project => runProjectAction(project, _("up"), composeUp)}
+                onStop={project => runProjectAction(project, _("stop"), composeStop)}
+                onRestart={project => runProjectAction(project, _("restart"), composeRestart)}
+                onPull={project => runProjectAction(project, _("pull"), composePull)}
+                onUpdate={project => runProjectAction(project, _("update"), composePullAndUp)}
+                onOpenDetail={openProjectDetail}
+                onOpenEditor={openProjectEditor}
+            />
+
+            <Toolbar className="ct-compose-actions-toolbar">
+                <ToolbarContent>
+                    <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("down"), composeDown, composeFiles)}>{_("Down selected")}</Button></ToolbarItem>
+                    <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("recreate"), composeRecreate, composeFiles)}>{_("Recreate selected")}</Button></ToolbarItem>
+                    <ToolbarItem><Button isDisabled={isDeleting} variant="danger" onClick={removeProject}>{isDeleting ? _("Deleting") : _("Delete selected")}</Button></ToolbarItem>
+                </ToolbarContent>
+            </Toolbar>
+
+            <ExpandableSection toggleText={_("Create, import, duplicate, or rename stacks")}
+                               isExpanded={isAdminPanelExpanded}
+                               onToggle={(_event, expanded) => setIsAdminPanelExpanded(expanded)}
+                               className="ct-compose-expandable">
+                <ComposeStackAdminPanel
+                    newProjectName={newProjectName}
+                    onNewProjectNameChange={setNewProjectName}
+                    templateName={templateName}
+                    onTemplateNameChange={setTemplateName}
+                    isCreating={isCreating}
+                    onCreateProject={createProject}
+                    duplicateName={duplicateName}
+                    onDuplicateNameChange={setDuplicateName}
+                    onDuplicateProject={duplicateProject}
+                    renameName={renameName}
+                    onRenameNameChange={setRenameName}
+                    onRenameProject={renameProject}
+                    importProjectName={importProjectName}
+                    onImportProjectNameChange={setImportProjectName}
+                    importFilePath={importFilePath}
+                    onImportFilePathChange={setImportFilePath}
+                    onImportFromFile={importFromFile}
+                    importContent={importContent}
+                    onImportContentChange={setImportContent}
+                    onImportFromContent={importFromContent}
+                    gitRepo={gitRepo}
+                    onGitRepoChange={setGitRepo}
+                    gitBranch={gitBranch}
+                    onGitBranchChange={setGitBranch}
+                    gitComposePath={gitComposePath}
+                    onGitComposePathChange={setGitComposePath}
+                    onImportFromGit={importFromGit}
+                />
+            </ExpandableSection>
+        </>
+    );
+
+    const renderDetail = () => (
+        <Tabs activeKey={activeTab} onSelect={(_event, key) => setActiveTab(key)} className="ct-compose-tabs">
+            <Tab eventKey="services" title={<TabTitleText>{_("State, containers and logs")}</TabTitleText>}>
+                <ComposeServicesTab
+                    selectedService={selectedService}
+                    onSelectedServiceChange={setSelectedService}
+                    services={services}
+                    isRunningAction={isRunningAction}
+                    onRunServiceRestart={runServiceRestart}
+                    serviceScale={serviceScale}
+                    onServiceScaleChange={setServiceScale}
+                    onRunServiceScale={runServiceScale}
+                    serviceContainers={serviceContainers}
+                    serviceLogs={serviceLogs}
+                    serviceInspect={serviceInspect}
+                />
+            </Tab>
+
+            <Tab eventKey="history" title={<TabTitleText>{_("History")}</TabTitleText>}>
+                <ComposeHistoryTab
+                    historyFiles={historyFiles}
+                    onRefreshHistory={refreshHistory}
+                    onRestoreHistory={restoreHistory}
+                />
+            </Tab>
+
+            <Tab eventKey="diff" title={<TabTitleText>{_("Diff")}</TabTitleText>}>
+                <CodeBlock>
+                    <CodeBlockCode>{diffText || _("No diff yet")}</CodeBlockCode>
+                </CodeBlock>
+            </Tab>
+        </Tabs>
+    );
+
+    const renderEditor = () => (
+        <>
+            <ComposeEditorTab
+                composeFiles={composeFiles}
+                selectedComposeFile={selectedComposeFile}
+                onSelectComposeFile={setSelectedComposeFile}
+                newComposeFileName={newComposeFileName}
+                onNewComposeFileNameChange={setNewComposeFileName}
+                onCreateComposeVariantFile={createComposeVariantFile}
+                loadingEditor={loadingEditor}
+                editorContent={editorContent}
+                onEditorContentChange={setEditorContent}
+                isSaving={isSaving}
+                onSaveCompose={saveCompose}
+                onShowDiff={onShowDiffFromEditor}
+                envContent={envContent}
+                onEnvContentChange={setEnvContent}
+                isSavingEnv={isSavingEnv}
+                onSaveEnv={saveEnv}
+            />
+
+            <ExpandableSection toggleText={_("Secrets")}
+                               isExpanded={isEditorSecretsExpanded}
+                               onToggle={(_event, expanded) => setIsEditorSecretsExpanded(expanded)}
+                               className="ct-compose-expandable">
+                <ComposeSecretsPanel
+                    actionSecretsText={actionSecretsText}
+                    onActionSecretsTextChange={setActionSecretsText}
+                    secretPassphrase={secretPassphrase}
+                    onSecretPassphraseChange={setSecretPassphrase}
+                    secretStorageBusy={secretStorageBusy}
+                    hasSecretsOnDisk={hasSecretsOnDisk}
+                    onSaveSecrets={saveSecretsToDisk}
+                    onUnlockSecrets={loadSecretsFromDisk}
+                    onDeleteSecrets={removeSecretsFromDisk}
+                />
+            </ExpandableSection>
+        </>
+    );
+
     return (
         <Card id="containers-compose" className="containers-compose">
             <CardHeader>
@@ -153,129 +317,21 @@ const ComposeManager = ({ onAddNotification }) => {
                                         <div className="ct-grey-text">
                                             {cockpit.format(_("$0/$1 services running"), selectedProject.running || 0, selectedProject.total || 0)}
                                         </div>
+                                        <div className="ct-grey-text">
+                                            {cockpit.format(_("$0 compose files"), composeFiles.length)}
+                                        </div>
                                     </CardBody>
                                 </Card>
 
-                                <ExpandableSection toggleText={_("Quick actions")}
-                                                   isExpanded={isActionPanelExpanded}
-                                                   onToggle={(_event, expanded) => setIsActionPanelExpanded(expanded)}
-                                                   className="ct-compose-expandable">
-                                    <Toolbar>
-                                        <ToolbarContent>
-                                            <ToolbarItem><Button isDisabled={isRunningAction} onClick={() => runAction(_("up"), composeUp, composeFiles)}>{_("Up")}</Button></ToolbarItem>
-                                            <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("stop"), composeStop, composeFiles)}>{_("Stop")}</Button></ToolbarItem>
-                                            <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("down"), composeDown, composeFiles)}>{_("Down")}</Button></ToolbarItem>
-                                            <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("restart"), composeRestart, composeFiles)}>{_("Restart")}</Button></ToolbarItem>
-                                            <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("pull"), composePull, composeFiles)}>{_("Pull")}</Button></ToolbarItem>
-                                            <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("update"), composePullAndUp, composeFiles)}>{_("Update")}</Button></ToolbarItem>
-                                            <ToolbarItem><Button isDisabled={isRunningAction} variant="secondary" onClick={() => runAction(_("recreate"), composeRecreate, composeFiles)}>{_("Recreate")}</Button></ToolbarItem>
-                                            <ToolbarItem><Button isDisabled={isDeleting} variant="danger" onClick={removeProject}>{isDeleting ? _("Deleting") : _("Delete stack")}</Button></ToolbarItem>
-                                        </ToolbarContent>
-                                    </Toolbar>
-                                </ExpandableSection>
-
-                                <ExpandableSection toggleText={_("Secrets")}
-                                                   isExpanded={isSecretsPanelExpanded}
-                                                   onToggle={(_event, expanded) => setIsSecretsPanelExpanded(expanded)}
-                                                   className="ct-compose-expandable">
-                                    <ComposeSecretsPanel
-                                        actionSecretsText={actionSecretsText}
-                                        onActionSecretsTextChange={setActionSecretsText}
-                                        secretPassphrase={secretPassphrase}
-                                        onSecretPassphraseChange={setSecretPassphrase}
-                                        secretStorageBusy={secretStorageBusy}
-                                        hasSecretsOnDisk={hasSecretsOnDisk}
-                                        onSaveSecrets={saveSecretsToDisk}
-                                        onUnlockSecrets={loadSecretsFromDisk}
-                                        onDeleteSecrets={removeSecretsFromDisk}
-                                    />
-                                </ExpandableSection>
-
-                                <ExpandableSection toggleText={_("Stack setup and import")}
-                                                   isExpanded={isAdminPanelExpanded}
-                                                   onToggle={(_event, expanded) => setIsAdminPanelExpanded(expanded)}
-                                                   className="ct-compose-expandable">
-                                    <ComposeStackAdminPanel
-                                        newProjectName={newProjectName}
-                                        onNewProjectNameChange={setNewProjectName}
-                                        templateName={templateName}
-                                        onTemplateNameChange={setTemplateName}
-                                        isCreating={isCreating}
-                                        onCreateProject={createProject}
-                                        duplicateName={duplicateName}
-                                        onDuplicateNameChange={setDuplicateName}
-                                        onDuplicateProject={duplicateProject}
-                                        renameName={renameName}
-                                        onRenameNameChange={setRenameName}
-                                        onRenameProject={renameProject}
-                                        importProjectName={importProjectName}
-                                        onImportProjectNameChange={setImportProjectName}
-                                        importFilePath={importFilePath}
-                                        onImportFilePathChange={setImportFilePath}
-                                        onImportFromFile={importFromFile}
-                                        importContent={importContent}
-                                        onImportContentChange={setImportContent}
-                                        onImportFromContent={importFromContent}
-                                        gitRepo={gitRepo}
-                                        onGitRepoChange={setGitRepo}
-                                        gitBranch={gitBranch}
-                                        onGitBranchChange={setGitBranch}
-                                        gitComposePath={gitComposePath}
-                                        onGitComposePathChange={setGitComposePath}
-                                        onImportFromGit={importFromGit}
-                                    />
-                                </ExpandableSection>
-
-                                <Tabs activeKey={activeTab} onSelect={(_event, key) => setActiveTab(key)} className="ct-compose-tabs">
+                                <Tabs activeKey={composeView} onSelect={onComposeViewSelect} className="ct-compose-view-tabs">
+                                    <Tab eventKey="overview" title={<TabTitleText>{_("Overview")}</TabTitleText>}>
+                                        {renderOverview()}
+                                    </Tab>
+                                    <Tab eventKey="detail" title={<TabTitleText>{_("Detail")}</TabTitleText>}>
+                                        {renderDetail()}
+                                    </Tab>
                                     <Tab eventKey="editor" title={<TabTitleText>{_("Editor")}</TabTitleText>}>
-                                        <ComposeEditorTab
-                                            composeFiles={composeFiles}
-                                            selectedComposeFile={selectedComposeFile}
-                                            onSelectComposeFile={setSelectedComposeFile}
-                                            newComposeFileName={newComposeFileName}
-                                            onNewComposeFileNameChange={setNewComposeFileName}
-                                            onCreateComposeVariantFile={createComposeVariantFile}
-                                            loadingEditor={loadingEditor}
-                                            editorContent={editorContent}
-                                            onEditorContentChange={setEditorContent}
-                                            isSaving={isSaving}
-                                            onSaveCompose={saveCompose}
-                                            onShowDiff={showDiff}
-                                            envContent={envContent}
-                                            onEnvContentChange={setEnvContent}
-                                            isSavingEnv={isSavingEnv}
-                                            onSaveEnv={saveEnv}
-                                        />
-                                    </Tab>
-
-                                    <Tab eventKey="services" title={<TabTitleText>{_("Services")}</TabTitleText>}>
-                                        <ComposeServicesTab
-                                            selectedService={selectedService}
-                                            onSelectedServiceChange={setSelectedService}
-                                            services={services}
-                                            isRunningAction={isRunningAction}
-                                            onRunServiceRestart={runServiceRestart}
-                                            serviceScale={serviceScale}
-                                            onServiceScaleChange={setServiceScale}
-                                            onRunServiceScale={runServiceScale}
-                                            serviceContainers={serviceContainers}
-                                            serviceLogs={serviceLogs}
-                                            serviceInspect={serviceInspect}
-                                        />
-                                    </Tab>
-
-                                    <Tab eventKey="diff" title={<TabTitleText>{_("Diff")}</TabTitleText>}>
-                                        <CodeBlock>
-                                            <CodeBlockCode>{diffText || _("No diff yet")}</CodeBlockCode>
-                                        </CodeBlock>
-                                    </Tab>
-
-                                    <Tab eventKey="history" title={<TabTitleText>{_("History")}</TabTitleText>}>
-                                        <ComposeHistoryTab
-                                            historyFiles={historyFiles}
-                                            onRefreshHistory={refreshHistory}
-                                            onRestoreHistory={restoreHistory}
-                                        />
+                                        {renderEditor()}
                                     </Tab>
                                 </Tabs>
                             </>
@@ -283,7 +339,7 @@ const ComposeManager = ({ onAddNotification }) => {
                     </GridItem>
                 </Grid>
                 <EmptyStateFooter>
-                    <small>{_("Use the collapsible sections to work step-by-step and keep the view focused.")}</small>
+                    <small>{_("Use Overview for quick operations, Detail for runtime visibility, and Editor for file changes.")}</small>
                 </EmptyStateFooter>
             </CardBody>
         </Card>

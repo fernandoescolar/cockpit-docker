@@ -29,25 +29,11 @@ const ComposeEditorTab = ({
     isSavingEnv,
     onSaveEnv,
 }) => {
+    const [isOverridesExpanded, setIsOverridesExpanded] = React.useState(false);
     const [isEnvExpanded, setIsEnvExpanded] = React.useState(false);
 
     return (
         <>
-            <FormGroup fieldId="compose-file-select" label={_("Compose files")}
-                       helperText={_("Multiple files are passed in order to compose commands")}>
-                <FormSelect value={selectedComposeFile} onChange={(_, value) => onSelectComposeFile(value)}>
-                    {composeFiles.map(path => <FormSelectOption key={path} value={path} label={path} />)}
-                </FormSelect>
-                <Split hasGutter>
-                    <SplitItem isFilled>
-                        <TextInput value={newComposeFileName} onChange={(_, value) => onNewComposeFileNameChange(value)} />
-                    </SplitItem>
-                    <SplitItem>
-                        <Button variant="secondary" onClick={onCreateComposeVariantFile}>{_("Add compose file")}</Button>
-                    </SplitItem>
-                </Split>
-            </FormGroup>
-
             <FormGroup fieldId="compose-file-editor" label={cockpit.format(_("Editing: $0"), selectedComposeFile)}>
                 <ScriptEditor value={editorContent}
                               onChange={onEditorContentChange}
@@ -62,6 +48,26 @@ const ComposeEditorTab = ({
                     <ToolbarItem><Button variant="secondary" onClick={onShowDiff}>{_("Show diff")}</Button></ToolbarItem>
                 </ToolbarContent>
             </Toolbar>
+
+            <ExpandableSection toggleText={_("Overrides and compose files")}
+                               isExpanded={isOverridesExpanded}
+                               onToggle={(_event, expanded) => setIsOverridesExpanded(expanded)}>
+                <FormGroup fieldId="compose-file-select"
+                           helperText={_("Multiple compose files are applied in order")}
+                           label={_("Compose files")}> 
+                    <FormSelect value={selectedComposeFile} onChange={(_, value) => onSelectComposeFile(value)}>
+                        {composeFiles.map(path => <FormSelectOption key={path} value={path} label={path} />)}
+                    </FormSelect>
+                    <Split hasGutter>
+                        <SplitItem isFilled>
+                            <TextInput value={newComposeFileName} onChange={(_, value) => onNewComposeFileNameChange(value)} />
+                        </SplitItem>
+                        <SplitItem>
+                            <Button variant="secondary" onClick={onCreateComposeVariantFile}>{_("Add compose file")}</Button>
+                        </SplitItem>
+                    </Split>
+                </FormGroup>
+            </ExpandableSection>
 
             <ExpandableSection toggleText={_("Environment file (.env)")}
                                isExpanded={isEnvExpanded}

@@ -113,6 +113,13 @@ export function useComposeManager(onAddNotification) {
 
     const composeFiles = selectedProject?.composeFiles?.length ? selectedProject.composeFiles : (selectedProject ? [selectedProject.composeFile] : []);
 
+    const composeFilesForProject = (project) => {
+        if (!project)
+            return [];
+
+        return project.composeFiles?.length ? project.composeFiles : [project.composeFile];
+    };
+
     const loadProjects = async (keepSelection = true) => {
         setProjects(null);
         try {
@@ -259,6 +266,33 @@ export function useComposeManager(onAddNotification) {
             onAddNotification({
                 type: 'danger',
                 error: cockpit.format(_("Compose $0 failed for $1"), actionName, selectedProject.name),
+                errorDetail: ex.message,
+            });
+        } finally {
+            setIsRunningAction(false);
+        }
+    };
+
+    const runActionForProject = async (project, actionName, fn) => {
+        if (!project)
+            return;
+
+        setIsRunningAction(true);
+        const secretEnv = parseSecretEnv(actionSecretsText);
+
+        try {
+            await fn(composeFilesForProject(project), secretEnv);
+            onAddNotification({
+                type: 'success',
+                error: cockpit.format(_("Compose $0 completed for $1"), actionName, project.name),
+            });
+            await loadProjects();
+            if (selectedProjectId === project.id)
+                await refreshServices();
+        } catch (ex) {
+            onAddNotification({
+                type: 'danger',
+                error: cockpit.format(_("Compose $0 failed for $1"), actionName, project.name),
                 errorDetail: ex.message,
             });
         } finally {
@@ -533,6 +567,7 @@ export function useComposeManager(onAddNotification) {
         composeFiles,
         loadProjects,
         runAction,
+        runActionForProject,
         composeUp,
         composeStop,
         composeDown,
