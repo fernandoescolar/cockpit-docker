@@ -15,6 +15,12 @@ mkdir -p ~/.local/share/cockpit
 ln -s `pwd`/dist ~/.local/share/cockpit/docker
 ```
 
+Before building, install the JavaScript dependencies with:
+
+```
+npm install
+```
+
 After changing the code and running `make` again, reload the Cockpit page in
 your browser.
 

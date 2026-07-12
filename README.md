@@ -25,7 +25,7 @@ Current Compose features:
  - Advanced stack operations: create, delete, duplicate, rename, import (file/content), deploy from Git
  - Multiple compose file support per stack (including override-style workflows)
  - Read and edit compose files directly from the UI
- - Monaco-powered YAML editor for compose files
+ - Syntax-highlighted YAML editor for compose files
  - `.env` editor per stack for variable management
  - Built-in stack templates for quick bootstrap
  - Secrets as `KEY=VALUE` entries injected into compose command environments
@@ -39,7 +39,7 @@ Current Compose features:
 Operational notes:
 
  - Compose operations require elevated privileges in Cockpit.
- - Stack actions and file editing use a Monaco-based editor in the UI.
+ - Stack actions and file editing use a local syntax-highlighted editor in the UI.
  - The selected top-level view is reflected in URL options through `view=compose`.
 
 # Development dependencies
@@ -59,6 +59,7 @@ These commands check out the source and build it into the `dist/` directory:
 ```
 git clone https://github.com/cockpit-docker/cockpit-docker
 cd cockpit-docker
+npm install
 make
 ```
 

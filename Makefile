@@ -12,8 +12,8 @@ SPEC=$(RPM_NAME).spec
 PREFIX ?= /usr/local
 APPSTREAMFILE=me.chabad360.$(PACKAGE_NAME).metainfo.xml
 VM_IMAGE=$(CURDIR)/test/images/$(TEST_OS)
-# stamp file to check for node_modules/
-NODE_MODULES_TEST=package-lock.json
+# stamp file to check whether npm dependencies were installed
+NODE_MODULES_TEST=node_modules/.npm-install.stamp
 # one example file in dist/ from bundler to check if that already ran
 DIST_TEST=dist/manifest.json
 # one example file in pkg/lib to check if it was already checked out
@@ -106,8 +106,8 @@ packaging/arch/PKGBUILD: packaging/arch/PKGBUILD.in
 packaging/debian/changelog: packaging/debian/changelog.in
 	sed 's/VERSION/$(VERSION)/' $< > $@
 
-$(DIST_TEST): $(COCKPIT_REPO_STAMP) $(shell find src/ -type f) package.json build.js
-	$(MAKE) package-lock.json && NODE_ENV=$(NODE_ENV) ./build.js
+$(DIST_TEST): $(COCKPIT_REPO_STAMP) $(shell find src/ -type f) package.json build.js $(NODE_MODULES_TEST)
+	NODE_ENV=$(NODE_ENV) ./build.js
 
 watch: $(NODE_MODULES_TEST)
 	NODE_ENV=$(NODE_ENV) ./build.js -w
@@ -116,6 +116,7 @@ clean:
 	rm -rf dist/
 	rm -f $(SPEC) packaging/arch/PKGBUILD packaging/debian/changelog
 	rm -f po/LINGUAS
+	rm -f $(NODE_MODULES_TEST)
 
 install: $(DIST_TEST) po/LINGUAS
 	mkdir -p $(DESTDIR)$(PREFIX)/share/cockpit/$(PACKAGE_NAME)
@@ -208,10 +209,9 @@ bots: $(COCKPIT_REPO_STAMP)
 test/reference: test/common
 	test/common/pixel-tests pull
 
-# We want tools/node-modules to run every time package-lock.json is requested
-# See https://www.gnu.org/software/make/manual/html_node/Force-Targets.html
-FORCE:
-$(NODE_MODULES_TEST): FORCE tools/node-modules
-	./node-modules-fix.sh
+package-lock.json $(NODE_MODULES_TEST): package.json
+	npm install
+	mkdir -p node_modules
+	touch $(NODE_MODULES_TEST)
 
 .PHONY: all clean install devel-install devel-uninstall print-version dist rpm prepare-check check vm print-vm

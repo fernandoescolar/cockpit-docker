@@ -9,7 +9,7 @@ rm -f bots  # common local case: existing bots symlink
 make bots test/common
 
 if [ -e .git ]; then
-    tools/node-modules checkout
+    npm install
     # disable detection of affected tests; testing takes too long as there is no parallelization
     mv .git dot-git
 else
